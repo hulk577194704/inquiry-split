@@ -948,35 +948,44 @@
                         .sort();
                 };
                 
-                // 获取所有分类中的关键词集合（忽略大小写和前后空格）
-                const getCategoryKeywordsSet = () => {
+                // 获取所有分类中的关键词集合（忽略前后空格）
+                const getCategoryKeywords = () => {
                     const keywordSet = new Set();
                     categories.value.forEach(category => {
                         category.items.forEach(keyword => {
-                            // 标准化关键词：去除前后空格，转为小写
-                            const normalized = keyword.trim().toLowerCase();
-                            if (normalized) {
-                                keywordSet.add(normalized);
-                            }
+                            // 标准化关键词：去除前后空格
+                            keywordSet.add(keyword.trim());
                         });
                     });
-                    return keywordSet;
+                    return [...keywordSet].sort((a, b) => b.length - a.length);
                 };
                 
                 // 过滤关键词：排除已在分类管理中的关键词
                 const filterKeywords = (keywords) => {
-                    const categoryKeywordSet = getCategoryKeywordsSet();
+                    const categoryKeywords = getCategoryKeywords();
+                    console.log('categoryKeywords:', categoryKeywords);
+                    
+                    const categoryKeywordSetLow = new Set();
+                    categoryKeywords.forEach(categoryKeyword => categoryKeywordSetLow.add(categoryKeyword.toLowerCase()));
                     const filtered = [];
                     const excluded = [];
                     
                     keywords.forEach(keyword => {
                         // 标准化关键词：去除前后空格，转为小写
                         const normalized = keyword.trim().toLowerCase();
-                        if (normalized && !categoryKeywordSet.has(normalized)) {
-                            filtered.push(keyword);
-                        } else if (normalized) {
+                        if (!normalized || categoryKeywordSetLow.has(normalized)) {
                             excluded.push(keyword);
+                            return;
                         }
+                        for (const categoryKeyword of categoryKeywords) {
+                            if(matchesKeyword(keyword, categoryKeyword)) {
+                                excluded.push(categoryKeyword);
+                                keyword = keyword.split(categoryKeyword).join('').trim();
+                                console.log(`已排除关键词：${categoryKeyword}, 剩余关键词：${keyword}`);
+                            } 
+                        } 
+                        filtered.push(keyword);
+
                     });
                     
                     return { filtered, excluded };
@@ -998,36 +1007,30 @@
                     if (normalizedSplitItem === normalizedKeyword) {
                         return true;
                     }
+                    // 规则2：分类关键词包含"空格" ,分割项包含分类关键词
+                    if (normalizedKeyword.includes(' ') && normalizedSplitItem.includes(normalizedKeyword)) {
+                        return true;
+                    }
                     
-                    // 规则2：分割项包含"空格+分类关键词"
+                    // 规则3：分割项包含"空格+分类关键词"
                     if (normalizedSplitItem.includes(' ' + normalizedKeyword)) {
                         return true;
                     }
                     
-                    // 规则3：分割项包含"分类关键词+空格"
+                    // 规则4：分割项包含"分类关键词+空格"
                     if (normalizedSplitItem.includes(normalizedKeyword + ' ')) {
                         return true;
                     }
+
+                    // // 规则4：分类关键词包含"空格+分割项"
+                    // if (normalizedKeyword.includes(' ' + normalizedSplitItem)) {
+                    //     return true;
+                    // }
                     
-                    // 规则4：分割项以"分类关键词"开头，后面是空格或结束
-                    if (normalizedSplitItem.startsWith(normalizedKeyword + ' ') || 
-                        normalizedSplitItem.startsWith(normalizedKeyword)) {
-                        // 检查是否是以关键词开头且后面是空格或是整个字符串
-                        const remaining = normalizedSplitItem.substring(normalizedKeyword.length);
-                        if (remaining === '' || remaining.startsWith(' ')) {
-                            return true;
-                        }
-                    }
-                    
-                    // 规则5：分割项以"分类关键词"结尾，前面是空格
-                    if (normalizedSplitItem.endsWith(' ' + normalizedKeyword) || 
-                        normalizedSplitItem.endsWith(normalizedKeyword)) {
-                        // 检查是否是以关键词结尾且前面是空格或是整个字符串
-                        const remaining = normalizedSplitItem.substring(0, normalizedSplitItem.length - normalizedKeyword.length);
-                        if (remaining === '' || remaining.endsWith(' ')) {
-                            return true;
-                        }
-                    }
+                    // // 规则5：分类关键词包含"分割项+空格"
+                    // if (normalizedKeyword.includes(normalizedSplitItem + ' ')) {
+                    //     return true;
+                    // }
                     
                     return false;
                 };
@@ -1422,8 +1425,14 @@
                             const fileData = [];
                             
                             lines.forEach((line, lineIndex) => {
-                                if (!line.trim()) return;
-                                
+                                if (!line.trim()) {
+                                    fileData.push({
+                                        original: line,
+                                        splitItems: [],
+                                        remarks: [] // 用于存放未匹配到的分割项
+                                    });
+                                    return;
+                                }
                                 const rowData = {
                                     original: line,
                                     splitItems: line.split(regex).map(item => item.trim()).filter(item => item),
