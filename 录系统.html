@@ -1016,10 +1016,8 @@
                 // 过滤关键词：排除已在分类管理中的关键词
                 const filterKeywords = (keywords) => {
                     const categoryKeywords = getAllCategoryKeywords();
-                    console.log('categoryKeywords:', categoryKeywords);
                     const categoryKeywordSetLow = new Set();
                     categoryKeywords.forEach(categoryKeyword => categoryKeywordSetLow.add(categoryKeyword.toLowerCase()));
-                    console.log('categoryKeywordSetLow:', categoryKeywordSetLow);
                     
                     const filtered = [];
                     const excluded = [];
@@ -1027,9 +1025,7 @@
                     keywords.forEach(keyword => {
                         // 标准化关键词：去除前后空格，转为小写
                         const normalized = keyword.trim().toLowerCase();
-                        console.log(`标准化关键词：${keyword} -> ${normalized}`);
                         if (!normalized || categoryKeywordSetLow.has(normalized)) {
-                            console.log(`排除关键词：${keyword}`);
                             excluded.push(keyword);
                             return;
                         }
@@ -1037,11 +1033,12 @@
                         // 检查是否包含分类关键词
                         let shouldExclude = false;
                         for (const categoryKeyword of categoryKeywords) {
-                            if (matchesKeyword(keyword, categoryKeyword)) {
-                                excluded.push(categoryKeyword);
+                            const result = matchesKeyword(keyword, categoryKeyword);
+                            if (result) {     
+                                excluded.push(result);
                                 shouldExclude = true;
                                 // 移除匹配到的部分
-                                keyword = keyword.split(categoryKeyword).join('').trim();
+                                keyword = keyword.split(result).join('').trim();
                             }
                         }
                         
@@ -1064,13 +1061,18 @@
                     
                     const normalizedSplitItem = splitItem.trim().toLowerCase();
                     const normalizedKeyword = keyword.trim().toLowerCase();
-                    const normalizedKeyword2 = normalizedKeyword.replace("-", " ");
-                    
-                    
-                    return normalizedKeywordInner(normalizedSplitItem, normalizedKeyword) ||
-                        normalizedKeywordInner(normalizedSplitItem, normalizedKeyword2);
+                    if(matchesKeywordInner(normalizedSplitItem, normalizedKeyword)) {
+                        return splitItem.match(new RegExp(normalizedKeyword, 'gi'))[0];
+                    }
+
+                    const normalizedKeyword2 = keyword.trim().toLowerCase().replace("-", " ");
+                    if(normalizedKeyword !== normalizedKeyword2 && matchesKeywordInner(normalizedSplitItem, normalizedKeyword2)) {
+                        return splitItem.match(new RegExp(normalizedKeyword2, 'gi'))[0];
+                    }
+                    return false;
                 };
-                const matchesKeywordInner = (splitItem, keyword) => {
+
+                const matchesKeywordInner = (normalizedSplitItem, normalizedKeyword) => {
                     
                     // 规则1：分割项完全等于分类关键词
                     if (normalizedSplitItem === normalizedKeyword) {
@@ -1107,7 +1109,6 @@
                     
                     return false;
                 };
-                
                 // 匹配分类项：检查分割项是否匹配分类项中的任何关键词
                 const matchesCategoryItem = (splitItem, categoryItem) => {
                     if (!splitItem || !categoryItem) return false;
