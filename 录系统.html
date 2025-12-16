@@ -1064,6 +1064,13 @@
                     
                     const normalizedSplitItem = splitItem.trim().toLowerCase();
                     const normalizedKeyword = keyword.trim().toLowerCase();
+                    const normalizedKeyword2 = normalizedKeyword.replace("-", " ");
+                    
+                    
+                    return normalizedKeywordInner(normalizedSplitItem, normalizedKeyword) ||
+                        normalizedKeywordInner(normalizedSplitItem, normalizedKeyword2);
+                };
+                const matchesKeywordInner = (splitItem, keyword) => {
                     
                     // 规则1：分割项完全等于分类关键词
                     if (normalizedSplitItem === normalizedKeyword) {
@@ -1078,7 +1085,6 @@
                     if (normalizedSplitItem.includes(' ' + normalizedKeyword + ' ')) {
                         return true;
                     }
-                    
                     // 规则4：分割项包含"空格+分类关键词"
                     if (normalizedSplitItem.endsWith(' ' + normalizedKeyword)) {
                         return true;
@@ -1088,6 +1094,16 @@
                     if (normalizedSplitItem.startsWith(normalizedKeyword + ' ')) {
                         return true;
                     }
+
+                    // // 规则4：分类关键词包含"空格+分割项"
+                    // if (normalizedKeyword.includes(' ' + normalizedSplitItem)) {
+                    //     return true;
+                    // }
+                    
+                    // // 规则5：分类关键词包含"分割项+空格"
+                    // if (normalizedKeyword.includes(normalizedSplitItem + ' ')) {
+                    //     return true;
+                    // }
                     
                     return false;
                 };
