@@ -1016,8 +1016,10 @@
                 // 过滤关键词：排除已在分类管理中的关键词
                 const filterKeywords = (keywords) => {
                     const categoryKeywords = getAllCategoryKeywords();
+                    console.log('categoryKeywords:', categoryKeywords);
                     const categoryKeywordSetLow = new Set();
                     categoryKeywords.forEach(categoryKeyword => categoryKeywordSetLow.add(categoryKeyword.toLowerCase()));
+                    console.log('categoryKeywordSetLow:', categoryKeywordSetLow);
                     
                     const filtered = [];
                     const excluded = [];
@@ -1025,7 +1027,9 @@
                     keywords.forEach(keyword => {
                         // 标准化关键词：去除前后空格，转为小写
                         const normalized = keyword.trim().toLowerCase();
+                        console.log(`标准化关键词：${keyword} -> ${normalized}`);
                         if (!normalized || categoryKeywordSetLow.has(normalized)) {
+                            console.log(`排除关键词：${keyword}`);
                             excluded.push(keyword);
                             return;
                         }
@@ -1070,13 +1074,18 @@
                         return true;
                     }
                     
-                    // 规则3：分割项包含"空格+分类关键词"
-                    if (normalizedSplitItem.includes(' ' + normalizedKeyword)) {
+                    // 规则3：分割项包含"空格+分类关键词+空格"
+                    if (normalizedSplitItem.includes(' ' + normalizedKeyword + ' ')) {
                         return true;
                     }
                     
-                    // 规则4：分割项包含"分类关键词+空格"
-                    if (normalizedSplitItem.includes(normalizedKeyword + ' ')) {
+                    // 规则4：分割项包含"空格+分类关键词"
+                    if (normalizedSplitItem.endsWith(' ' + normalizedKeyword)) {
+                        return true;
+                    }
+                    
+                    // 规则5：分割项包含"分类关键词+空格"
+                    if (normalizedSplitItem.startsWith(normalizedKeyword + ' ')) {
                         return true;
                     }
                     

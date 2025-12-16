@@ -1007,18 +1007,22 @@
                     if (normalizedSplitItem === normalizedKeyword) {
                         return true;
                     }
-                    // 规则2：分类关键词包含"空格" ,分割项包含分类关键词
+                    // 规则2：分类关键词包含"空格"，分割项包含分类关键词
                     if (normalizedKeyword.includes(' ') && normalizedSplitItem.includes(normalizedKeyword)) {
                         return true;
                     }
                     
-                    // 规则3：分割项包含"空格+分类关键词"
-                    if (normalizedSplitItem.includes(' ' + normalizedKeyword)) {
+                    // 规则3：分割项包含"空格+分类关键词+空格"
+                    if (normalizedSplitItem.includes(' ' + normalizedKeyword + ' ')) {
+                        return true;
+                    }
+                    // 规则4：分割项包含"空格+分类关键词"
+                    if (normalizedSplitItem.endsWith(' ' + normalizedKeyword)) {
                         return true;
                     }
                     
-                    // 规则4：分割项包含"分类关键词+空格"
-                    if (normalizedSplitItem.includes(normalizedKeyword + ' ')) {
+                    // 规则5：分割项包含"分类关键词+空格"
+                    if (normalizedSplitItem.startsWith(normalizedKeyword + ' ')) {
                         return true;
                     }
 
