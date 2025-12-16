@@ -1429,7 +1429,7 @@
                                     fileData.push({
                                         original: line,
                                         splitItems: [],
-                                        remarks: [] // 用于存放未匹配到的分割项
+                                        remarks: [] 
                                     });
                                     return;
                                 }
@@ -1463,7 +1463,9 @@
                                     });
                                     
                                     // 如果这个分割项没有匹配到任何分类，则添加到备注
-                                    if (!matched) {
+                                    if (!matched && rowData['备注'] && rowData['备注'].size != 0) {
+                                        rowData['备注'].push(splitItem);
+                                    } else if (!matched) {
                                         rowData.remarks.push(splitItem);
                                     }
                                 });
