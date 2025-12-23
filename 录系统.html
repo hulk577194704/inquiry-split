@@ -165,7 +165,7 @@
             text-align: center;
             color: #909399;
             font-style: italic;
-            border-left-color: #dcdfe6;
+                            border-left-color: #dcdfe6;
         }
         
         .add-category {
@@ -678,26 +678,35 @@
                                 <div class="match-mode-section" v-if="categories.length > 0">
                                     <h4>匹配模式设置</h4>
                                     <p class="edit-hint" style="margin-bottom: 10px;">
-                                        默认所有分类使用"只取最长匹配"模式，勾选的分类将使用"多匹配以逗号拼接"模式：
+                                        为每个分类设置匹配模式：
                                     </p>
                                     <div class="match-mode-grid">
                                         <div class="match-mode-item" v-for="(category, index) in categories" :key="index">
-                                            <el-checkbox v-model="category.multipleMatch">
-                                                多匹配以逗号拼接
-                                            </el-checkbox>
+                                            <el-select 
+                                                v-model="category.matchMode" 
+                                                size="small" 
+                                                style="width: 160px;"
+                                                placeholder="选择匹配模式"
+                                                @change="saveMatchModeImmediately"
+                                            >
+                                                <el-option value="longest" label="只取最长匹配"></el-option>
+                                                <el-option value="space" label="多匹配以空格拼接"></el-option>
+                                                <el-option value="comma" label="多匹配以逗号拼接"></el-option>
+                                            </el-select>
                                             <span class="match-mode-name">{{ category.name }}</span>
                                         </div>
                                     </div>
                                     <p class="edit-hint" style="margin-top: 10px;">
                                         说明：<br>
-                                        1. 默认所有分类使用"只取最长匹配"模式（勾选框未选中）<br>
-                                        2. 勾选后表示该分类使用"多匹配以逗号拼接"模式<br>
-                                        3. 匹配规则：先忽略大小写和前后空格，然后按以下顺序匹配：<br>
+                                        1. "只取最长匹配"：在同一分类中匹配到多个时，只取最长的主关键词<br>
+                                        2. "多匹配以空格拼接"：在同一分类中匹配到多个时，所有匹配的主关键词用空格连接<br>
+                                        3. "多匹配以逗号拼接"：在同一分类中匹配到多个时，所有匹配的主关键词用逗号连接<br>
+                                        4. 匹配规则：先忽略大小写和前后空格，然后按以下顺序匹配：<br>
                                         &nbsp;&nbsp;&nbsp;&nbsp;a. 分割项完全等于分类关键词<br>
                                         &nbsp;&nbsp;&nbsp;&nbsp;b. 分割项包含"空格+分类关键词"<br>
                                         &nbsp;&nbsp;&nbsp;&nbsp;c. 分割项包含"分类关键词+空格"<br>
-                                        4. 匹配时对分类项中每个关键词进行匹配，取值时取第一个主关键词<br>
-                                        5. 未匹配到的分割项将放入"备注"列
+                                        5. 匹配时对分类项中每个关键词进行匹配，取值时取第一个主关键词<br>
+                                        6. 未匹配到的分割项将放入"备注"列
                                     </p>
                                 </div>
                                 
@@ -871,23 +880,23 @@
                 const excludedKeywords = ref([]); // 被排除的关键词（已在分类管理中）
                 const processedText = ref('');
                 
-                // 默认分类 - 添加multipleMatch属性，默认为false（只取最长匹配）
+                // 默认分类 - 添加matchMode属性，默认为'space'（多匹配以空格拼接）
                 const defaultCategories = [
-                    { name: '名称', items: [], multipleMatch: false },
-                    { name: '尺寸', items: [], multipleMatch: false },
-                    { name: '壁厚', items: [], multipleMatch: false },
-                    { name: '压力', items: [], multipleMatch: false },
-                    { name: '工艺', items: [], multipleMatch: false },
-                    { name: '材质', items: [], multipleMatch: false },
-                    { name: '标准', items: [], multipleMatch: false },
-                    { name: '连接面', items: [], multipleMatch: false }
+                    { name: '名称', items: [], matchMode: 'space' },
+                    { name: '尺寸', items: [], matchMode: 'space' },
+                    { name: '壁厚', items: [], matchMode: 'space' },
+                    { name: '压力', items: [], matchMode: 'space' },
+                    { name: '工艺', items: [], matchMode: 'space' },
+                    { name: '材质', items: [], matchMode: 'space' },
+                    { name: '标准', items: [], matchMode: 'space' },
+                    { name: '连接面', items: [], matchMode: 'space' }
                 ];
                 
                 // 所有分类
                 const categories = ref([...defaultCategories.map(cat => ({ 
                     ...cat, 
                     items: [...cat.items],
-                    multipleMatch: cat.multipleMatch || false
+                    matchMode: cat.matchMode || 'space'
                 }))]);
                 
                 // 编辑对话框相关
@@ -1350,7 +1359,7 @@
                             categories.value.push({
                                 name: value.trim(),
                                 items: [],
-                                multipleMatch: false // 默认只取最长匹配
+                                matchMode: 'space' // 默认多匹配以空格拼接
                             });
                             saveCategoriesToStorage();
                             ElMessage.success(`分类 "${value}" 已添加`);
@@ -1447,7 +1456,7 @@
                                 categories.value.push({
                                     name: categoryName,
                                     items: deduplicatedItems,
-                                    multipleMatch: false // 默认只取最长匹配
+                                    matchMode: 'space' // 默认多匹配以空格拼接
                                 });
                             }
                             
@@ -1572,8 +1581,8 @@
                                     const matches = rowData[category.name];
                                     if (matches.length === 0) {
                                         rowData[category.name] = '';
-                                    } else if (category.multipleMatch) {
-                                        // 多匹配以逗号拼接
+                                    } else if (category.matchMode === 'space' || category.matchMode === 'comma') {
+                                        // 多匹配拼接模式
                                         // 去重并按原始顺序保留
                                         const uniqueMatches = [];
                                         matches.forEach(match => {
@@ -1581,7 +1590,9 @@
                                                 uniqueMatches.push(match);
                                             }
                                         });
-                                        rowData[category.name] = uniqueMatches.join(', ');
+                                        // 根据模式选择拼接符号
+                                        const separator = category.matchMode === 'space' ? ' ' : ', ';
+                                        rowData[category.name] = uniqueMatches.join(separator);
                                     } else {
                                         // 只取最长匹配（默认）
                                         let longestMatch = '';
@@ -1703,7 +1714,7 @@
                     const data = categories.value.map(cat => ({
                         name: cat.name,
                         items: cat.items,
-                        multipleMatch: cat.multipleMatch || false
+                        matchMode: cat.matchMode || 'space'
                     }));
                     
                     localStorage.setItem('keywordCategories', JSON.stringify(data));
@@ -1729,10 +1740,8 @@
                                     categories.value[existingIndex].items = deduplicateAndSortKeywordStrings(
                                         Array.isArray(savedCat.items) ? savedCat.items : []
                                     );
-                                    // 更新匹配模式
-                                    if (savedCat.multipleMatch !== undefined) {
-                                        categories.value[existingIndex].multipleMatch = savedCat.multipleMatch;
-                                    }
+                                    // 更新匹配模式（兼容旧数据：如果matchMode不存在，默认为'space'）
+                                    categories.value[existingIndex].matchMode = savedCat.matchMode || 'space';
                                 } else {
                                     // 添加新分类，并根据主关键词去重排序
                                     categories.value.push({
@@ -1740,13 +1749,32 @@
                                         items: deduplicateAndSortKeywordStrings(
                                             Array.isArray(savedCat.items) ? savedCat.items : []
                                         ),
-                                        multipleMatch: savedCat.multipleMatch || false
+                                        matchMode: savedCat.matchMode || 'space'
                                     });
+                                }
+                            });
+                            
+                            // 兼容旧数据：如果matchMode不存在，则设置为'space'
+                            categories.value.forEach(cat => {
+                                if (!cat.matchMode) {
+                                    cat.matchMode = 'space';
                                 }
                             });
                         }
                     } catch (e) {
                         console.error('加载分类数据失败:', e);
+                    }
+                };
+                
+                // 匹配模式改变后立即保存到 localStorage
+                const saveMatchModeImmediately = () => {
+                    saveCategoriesToStorage();
+                    // 显示保存成功的提示（避免过于频繁的提示，可以设置一个简单的防抖）
+                    if (!window.matchModeSaveTimeout) {
+                        window.matchModeSaveTimeout = setTimeout(() => {
+                            ElMessage.success('匹配模式已保存');
+                            window.matchModeSaveTimeout = null;
+                        }, 500);
                     }
                 };
                 
@@ -1810,7 +1838,8 @@
                     processJsonImport,
                     exportCategories,
                     generateExcelData,
-                    exportToExcel
+                    exportToExcel,
+                    saveMatchModeImmediately
                 };
             }
         })
