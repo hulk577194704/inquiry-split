@@ -1073,12 +1073,7 @@
                     if(matchesKeywordInner(normalizedSplitItem, normalizedKeyword)) {
                         return splitItem.match(new RegExp(normalizedKeyword, 'gi'))[0];
                     }
-
-                    const normalizedKeyword2 = keyword.trim().toLowerCase().replace("-", " ");
-                    if(normalizedKeyword !== normalizedKeyword2 && matchesKeywordInner(normalizedSplitItem, normalizedKeyword2)) {
-                        return splitItem.match(new RegExp(normalizedKeyword2, 'gi'))[0];
-                    }
-                    return false;
+                    return null;
                 };
 
                 const matchesKeywordInner = (normalizedSplitItem, normalizedKeyword) => {
