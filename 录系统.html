@@ -1071,7 +1071,8 @@
                     const normalizedSplitItem = splitItem.trim().toLowerCase();
                     const normalizedKeyword = keyword.trim().toLowerCase();
                     if(matchesKeywordInner(normalizedSplitItem, normalizedKeyword)) {
-                        return splitItem.match(new RegExp(normalizedKeyword, 'gi'))[0];
+                        console.log('匹配成功：', splitItem, '=>' , normalizedKeyword , '=>', normalizedKeyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+                        return splitItem.match(new RegExp(normalizedKeyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'))[0];
                     }
                     return null;
                 };
@@ -1694,7 +1695,7 @@
                         });
                         
                         // 导出文件
-                        const fileName = `分类拆分数据_多文件_${new Date().toISOString().slice(0, 10)}.xlsx`;
+                        const fileName = `分类拆分数据_多文件_${new Date().toISOString()}.xlsx`;
                         XLSX.writeFile(wb, fileName);
                         
                         ElMessage.success(`Excel文件已导出: ${fileName}，包含 ${excelSheets.value.length} 个工作表`);
