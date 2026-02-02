@@ -165,7 +165,7 @@
             text-align: center;
             color: #909399;
             font-style: italic;
-                            border-left-color: #dcdfe6;
+            border-left-color: #dcdfe6;
         }
         
         .add-category {
@@ -554,6 +554,7 @@
                             <h3 class="section-title">分类管理</h3>
                             <p style="margin-bottom: 15px; color: #606266;">
                                 在这里创建和管理分类，每个分类项是逗号分隔的多个关键词字符串，第一个为主关键词，竖着展示。
+                                <strong style="color: #E6A23C;">注意：如果创建名为"备注"的分类，其匹配到的内容会自动归入Excel的"备注"列中。</strong>
                             </p>
                             
                             <div style="margin-bottom: 20px; text-align: center;">
@@ -626,6 +627,10 @@
                                 <p style="margin-bottom: 15px; color: #606266;">
                                     上传多个txt文件，将每个文件的每一行按分类数据拆分，并导出为Excel文件。
                                     匹配时对分类项中每个关键词进行匹配，取值时取第一个主关键词。
+                                    <strong style="color: #409EFF;">说明：</strong>
+                                    <br>1. 未匹配到的分割项会放入"备注"列
+                                    <br>2. 如果分类管理中有名为"备注"的分类，其匹配到的内容也会放入"备注"列
+                                    <br>3. 以上两种"备注"会合并到同一列中
                                 </p>
                                 
                                 <div class="upload-area">
@@ -706,7 +711,9 @@
                                         &nbsp;&nbsp;&nbsp;&nbsp;b. 分割项包含"空格+分类关键词"<br>
                                         &nbsp;&nbsp;&nbsp;&nbsp;c. 分割项包含"分类关键词+空格"<br>
                                         5. 匹配时对分类项中每个关键词进行匹配，取值时取第一个主关键词<br>
-                                        6. 未匹配到的分割项将放入"备注"列
+                                        6. 未匹配到的分割项将放入"备注"列<br>
+                                        7. 分类管理中的"备注"分类匹配到的内容也会放入"备注"列<br>
+                                        8. 以上两种"备注"会合并到同一列中
                                     </p>
                                 </div>
                                 
@@ -725,7 +732,7 @@
                                     </div>
                                     <div>
                                         <el-checkbox v-model="excelOptions.includeRemarks">包含备注列</el-checkbox>
-                                        <el-tooltip content="是否在Excel中包含备注列（存放未匹配到的分割项）" placement="top">
+                                        <el-tooltip content="是否在Excel中包含备注列（存放未匹配到的分割项和备注分类匹配到的内容）" placement="top">
                                             <el-icon style="margin-left: 5px;"><InfoFilled /></el-icon>
                                         </el-tooltip>
                                     </div>
@@ -747,7 +754,7 @@
                                             <tr>
                                                 <th v-if="excelOptions.includeOriginal">原始行</th>
                                                 <th v-if="excelOptions.includeSplitItems">分割项</th>
-                                                <th v-for="category in categories" :key="category.name">{{ category.name }}</th>
+                                                <th v-for="category in categories.filter(c => c.name !== '备注')" :key="category.name">{{ category.name }}</th>
                                                 <th v-if="excelOptions.includeRemarks">备注</th>
                                             </tr>
                                         </thead>
@@ -755,13 +762,13 @@
                                             <tr v-for="(row, index) in excelPreviewData" :key="index">
                                                 <td v-if="excelOptions.includeOriginal">{{ row.original }}</td>
                                                 <td v-if="excelOptions.includeSplitItems">{{ row.splitItems.join(', ') }}</td>
-                                                <td v-for="category in categories" :key="category.name">{{ row[category.name] || '' }}</td>
+                                                <td v-for="category in categories.filter(c => c.name !== '备注')" :key="category.name">{{ row[category.name] || '' }}</td>
                                                 <td v-if="excelOptions.includeRemarks">{{ row.remarks || '' }}</td>
                                             </tr>
                                         </tbody>
                                     </table>
                                     <p style="padding: 10px; text-align: center; color: #909399; font-size: 13px;">
-                                        共 {{ currentSheetData.length }} 行数据，{{ categories.length }} 个分类
+                                        共 {{ currentSheetData.length }} 行数据，{{ categories.filter(c => c.name !== '备注').length }} 个分类
                                         <span v-if="excelSheets.length > 1">(当前工作表: {{ currentSheetName }})</span>
                                     </p>
                                     <div v-if="excelSheets.length > 1" style="text-align: center; margin-bottom: 10px;">
@@ -793,6 +800,7 @@
             <div>
                 <p class="edit-hint">每行输入一个逗号分隔的关键词串，第一个为主关键词：</p>
                 <p class="edit-hint">格式示例：不锈钢,不锈铁,SS  (第一个"不锈钢"为主关键词，"不锈铁"和"SS"为同义词)</p>
+                <p class="edit-hint" style="color: #E6A23C;">注意：如果分类名称为"备注"，匹配到的内容会自动归入Excel的"备注"列中。</p>
                 <el-input
                     v-model="editingCategoryContent"
                     type="textarea"
@@ -822,7 +830,7 @@
                     v-model="jsonImportData"
                     type="textarea"
                     :rows="12"
-                    placeholder='{"名称": ["不锈钢,不锈铁,SS", "碳钢,CS"], "尺寸": ["10mm", "20mm"], "壁厚": []}'
+                    placeholder='{"名称": ["不锈钢,不锈铁,SS", "碳钢,CS"], "尺寸": ["10mm", "20mm"], "壁厚": [], "备注": ["测试,test", "样品,sample"]}'
                 ></el-input>
                 <div style="margin-top: 15px;">
                     <h4 style="margin-bottom: 10px;">JSON格式说明：</h4>
@@ -835,7 +843,8 @@
                         &nbsp;&nbsp;"工艺": ["锻造,锻造件", "铸造,铸件"],<br/>
                         &nbsp;&nbsp;"材质": ["不锈钢,不锈铁,SS", "碳钢,CS"],<br/>
                         &nbsp;&nbsp;"标准": ["国标,GB", "美标,ASME"],<br/>
-                        &nbsp;&nbsp;"连接面": ["平面,FF", "凸面,RF"]<br/>
+                        &nbsp;&nbsp;"连接面": ["平面,FF", "凸面,RF"],<br/>
+                        &nbsp;&nbsp;"备注": ["测试,test", "样品,sample"]  &lt;-- 匹配到的内容会放入备注列<br/>
                         }
                     </div>
                 </div>
@@ -1102,18 +1111,9 @@
                         return true;
                     }
 
-                    // // 规则4：分类关键词包含"空格+分割项"
-                    // if (normalizedKeyword.includes(' ' + normalizedSplitItem)) {
-                    //     return true;
-                    // }
-                    
-                    // // 规则5：分类关键词包含"分割项+空格"
-                    // if (normalizedKeyword.includes(normalizedSplitItem + ' ')) {
-                    //     return true;
-                    // }
-                    
                     return false;
                 };
+                
                 // 匹配分类项：检查分割项是否匹配分类项中的任何关键词
                 const matchesCategoryItem = (splitItem, categoryItem) => {
                     if (!splitItem || !categoryItem) return false;
@@ -1147,7 +1147,6 @@
                 // 第一个标签页：移除文件
                 const handleFileRemove = (file) => {
                     // Element Plus上传组件的移除事件
-                    // 我们这里不使用这个，因为我们自己管理文件列表
                 };
                 
                 // 第一个标签页：手动移除文件
@@ -1515,6 +1514,10 @@
                         const sheets = [];
                         let totalRows = 0;
                         
+                        // 分离出"备注"分类和其他分类
+                        const remarkCategory = categories.value.find(cat => cat.name === '备注');
+                        const normalCategories = categories.value.filter(cat => cat.name !== '备注');
+                        
                         // 每个文件一个工作表模式
                         excelFiles.value.forEach(file => {
                             const lines = file.content.split(/\r?\n/);
@@ -1525,18 +1528,19 @@
                                     fileData.push({
                                         original: line,
                                         splitItems: [],
-                                        remarks: [] 
+                                        remarks: [] // 用于存放未匹配到的分割项和备注分类匹配到的内容
                                     });
                                     return;
                                 }
+                                
                                 const rowData = {
                                     original: line,
                                     splitItems: line.split(regex).map(item => item.trim()).filter(item => item),
-                                    remarks: [] // 用于存放未匹配到的分割项
+                                    remarks: [] // 用于存放未匹配到的分割项和备注分类匹配到的内容
                                 };
                                 
-                                // 为每个分类初始化空值
-                                categories.value.forEach(category => {
+                                // 为每个普通分类初始化空值
+                                normalCategories.forEach(category => {
                                     rowData[category.name] = [];
                                 });
                                 
@@ -1544,14 +1548,29 @@
                                 rowData.splitItems.forEach(splitItem => {
                                     let matched = false;
                                     
-                                    // 先处理每个分类
-                                    categories.value.forEach(category => {
+                                    // 1. 先检查备注分类（如果存在）
+                                    if (remarkCategory) {
+                                        // 找出该备注分类中所有匹配的分类项
+                                        const matchedRemarkItems = remarkCategory.items.filter(categoryItem => 
+                                            matchesCategoryItem(splitItem, categoryItem)
+                                        );
+                                        
+                                        if (matchedRemarkItems.length > 0) {
+                                            matched = true;
+                                            // 备注分类匹配到的内容：取第一个匹配的分类项的主关键词
+                                            const mainKeyword = getMainKeyword(matchedRemarkItems[0]);
+                                            rowData.remarks.push(mainKeyword);
+                                        }
+                                    }
+                                    
+                                    // 2. 检查普通分类
+                                    normalCategories.forEach(category => {
                                         // 找出该分类中所有匹配的分类项（每个分类项是逗号分隔的字符串）
                                         const matchedCategoryItems = category.items.filter(categoryItem => 
                                             matchesCategoryItem(splitItem, categoryItem)
                                         );
                                         
-                                        // 按长度 降序排序（根据主关键词长度）
+                                        // 按长度降序排序（根据主关键词长度）
                                         matchedCategoryItems.sort((a, b) => {
                                             const aMain = getMainKeyword(a);
                                             const bMain = getMainKeyword(b);
@@ -1566,14 +1585,14 @@
                                         }
                                     });
                                     
-                                    // 如果这个分割项没有匹配到任何分类，则添加到备注
+                                    // 3. 如果这个分割项没有匹配到任何分类（包括备注分类），则添加到备注
                                     if (!matched) {
                                         rowData.remarks.push(splitItem);
                                     }
                                 });
                                 
-                                // 根据匹配模式处理每个分类的结果
-                                categories.value.forEach(category => {
+                                // 根据匹配模式处理每个普通分类的结果
+                                normalCategories.forEach(category => {
                                     const matches = rowData[category.name];
                                     if (matches.length === 0) {
                                         rowData[category.name] = '';
@@ -1601,9 +1620,16 @@
                                     }
                                 });
                                 
-                                // 处理备注
+                                // 处理备注列：将备注数组用逗号连接
                                 if (rowData.remarks.length > 0) {
-                                    rowData.remarks = rowData.remarks.join(', ');
+                                    // 去重并按原始顺序保留
+                                    const uniqueRemarks = [];
+                                    rowData.remarks.forEach(remark => {
+                                        if (!uniqueRemarks.includes(remark)) {
+                                            uniqueRemarks.push(remark);
+                                        }
+                                    });
+                                    rowData.remarks = uniqueRemarks.join(', ');
                                 } else {
                                     rowData.remarks = '';
                                 }
@@ -1664,11 +1690,15 @@
                             // 准备工作表数据
                             const wsData = [];
                             
-                            // 表头
+                            // 表头 - 只显示普通分类，不显示备注分类
                             const headers = [];
                             if (excelOptions.includeOriginal) headers.push('原始行');
                             if (excelOptions.includeSplitItems) headers.push('分割项');
-                            categories.value.forEach(category => headers.push(category.name));
+                            
+                            // 只添加普通分类（排除备注分类）
+                            const normalCategories = categories.value.filter(cat => cat.name !== '备注');
+                            normalCategories.forEach(category => headers.push(category.name));
+                            
                             if (excelOptions.includeRemarks) headers.push('备注');
                             wsData.push(headers);
                             
@@ -1677,7 +1707,10 @@
                                 const rowData = [];
                                 if (excelOptions.includeOriginal) rowData.push(row.original);
                                 if (excelOptions.includeSplitItems) rowData.push(row.splitItems.join(', '));
-                                categories.value.forEach(category => rowData.push(row[category.name] || ''));
+                                
+                                // 只添加普通分类的数据
+                                normalCategories.forEach(category => rowData.push(row[category.name] || ''));
+                                
                                 if (excelOptions.includeRemarks) rowData.push(row.remarks || '');
                                 wsData.push(rowData);
                             });
